@@ -175,7 +175,7 @@ function fromInputVal(v) {
 
 // ── Init ─────────────────────────────────────────────────────
 window.onload = function() {
-  var defFrom = todayStr();
+  var defFrom = daysAgoStr(30);
   var defTo   = todayStr();
   document.getElementById("df").value = toInputVal(defFrom);
   document.getElementById("dt").value = toInputVal(defTo);
@@ -225,15 +225,24 @@ function fetchData(dateFrom, dateTo, shop) {
 // ── Toggle chart expand ──────────────────────────────────────
 function toggleChart(btn) {
   var card = btn.closest('.chart-card');
+  var canvas = card.querySelector('canvas');
   var expanded = card.classList.toggle('expanded');
   btn.textContent = expanded ? 'Collapse' : 'Expand';
-  // Force chart resize
-  var canvas = card.querySelector('canvas');
-  if (canvas && canvas._chart) canvas._chart.resize();
-  // Also try Chart.js v4 way
-  Chart.instances && Object.values(Chart.instances).forEach(function(c){
-    if(c.canvas === canvas) c.resize();
-  });
+  // Directly set canvas height and force Chart.js to redraw
+  var wrap = card.querySelector('.chart-wrap');
+  if (wrap) {
+    wrap.style.height = expanded ? '320px' : '160px';
+    // Find and resize the Chart.js instance attached to this canvas
+    var chartId = canvas.id;
+    if (chartId === 'revenueChart' && revenueChart) {
+      revenueChart.resize();
+      revenueChart.update();
+    }
+    if (chartId === 'salesChart' && salesChart) {
+      salesChart.resize();
+      salesChart.update();
+    }
+  }
 }
 
 // ── Render dashboard ─────────────────────────────────────────
@@ -316,6 +325,7 @@ function renderCharts(data) {
     data: { labels: data.monthLabels || [], datasets: datasets },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { position: "bottom" } },
       scales: { y: { beginAtZero: true, ticks: { callback: function(v){ return "€"+v.toFixed(0); } } } }
     }
@@ -329,6 +339,7 @@ function renderCharts(data) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
     }
