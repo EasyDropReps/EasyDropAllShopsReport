@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EasyDrop Reporting Dashboard - All Shops</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;background:#f5f5f5;color:#1a1a1a}
+a{color:inherit}
+.topbar{background:#1a1a2e;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.topbar h1{font-size:16px;font-weight:600}
+.topbar .meta{font-size:12px;opacity:.7}
+.ctrl{background:#fff;border-bottom:1px solid #e5e5e5;padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ctrl label{font-size:13px;color:#555}
+.ctrl input[type=date],.ctrl select{padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px}
+.ctrl button{padding:6px 16px;background:#1a1a2e;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer}
+.ctrl button:hover{background:#2d2d50}
+.btn-green{background:#059669!important}
+.main{padding:16px 24px 40px}
+.metrics{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.metric{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:14px 20px;min-width:130px;flex:1}
+.metric .lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.metric .val{font-size:22px;font-weight:600;color:#1a1a2e}
+.chart-card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:20px;margin-bottom:16px}
+.chart-card h3{font-size:12px;font-weight:600;color:#1a1a2e;margin-bottom:16px;text-transform:uppercase;letter-spacing:.04em}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:900px){.charts-grid{grid-template-columns:1fr}}
+.shop-bars{padding:4px 0}
+.shop-bar-item{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:13px}
+.shop-bar-label{width:140px;flex-shrink:0;color:#555}
+.shop-bar-track{flex:1;background:#f0f0f0;border-radius:4px;height:10px}
+.shop-bar-fill{height:10px;border-radius:4px;transition:width .4s}
+.shop-bar-value{width:170px;flex-shrink:0;color:#1a1a2e;font-weight:500}
+.tbl-card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;overflow:hidden;margin-bottom:16px}
+.tbl-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #f0f0f0;background:#fafafa;flex-wrap:wrap;gap:8px}
+.tbl-hdr h3{font-size:14px;font-weight:600;color:#1a1a2e}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#888;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+tbody tr:hover{background:#fafafa}
+tbody td{padding:9px 12px;border-bottom:1px solid #f7f7f7;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tfoot td{padding:9px 12px;border-top:2px solid #e5e5e5;font-weight:600;background:#fafafa}
+.c{text-align:center}.r{text-align:right}
+.muted{color:#aaa}.mono{font-family:"SF Mono","Fira Code",monospace;font-size:12px}
+.amt{font-weight:600;color:#1a1a2e}
+.promo{color:#059669;font-weight:500}
+.tfl{color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.tfa{font-size:14px;color:#1a1a2e}
+.type-rent{background:#eef2ff;color:#3730a3;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.type-over{background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.type-ext{background:#d1fae5;color:#059669;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.date-group-hdr td{background:#1a1a2e;color:#fff;font-weight:600;font-size:13px;padding:10px 14px}
+.date-group-meta{font-weight:400;opacity:.7;font-size:12px;margin-left:8px}
+.shop-group-hdr td{background:#f0f0ff;color:#3730a3;font-weight:600;font-size:12px;padding:8px 14px}
+.shop-group-meta{font-weight:400;color:#888;margin-left:8px}
+.shop-subtotal td{background:#fafafa;border-top:1px solid #e5e5e5}
+.day-total-row td{background:#f5f5ff;border-top:2px solid #1a1a2e;font-size:14px}
+#spinner{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(26,26,46,0.7);z-index:9999;align-items:center;justify-content:center;flex-direction:column}
+#spinner.active{display:flex}
+.spin{width:48px;height:48px;border:4px solid rgba(255,255,255,0.2);border-top:4px solid #fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-txt{color:#fff;font-size:14px;margin-top:16px;opacity:.8}
+.error-box{background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:20px;color:#dc2626;margin:20px 0}
+/* Rentals overlay */
+#rentals-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#f5f5f5;z-index:8000;overflow-y:auto}
+#rentals-overlay.active{display:block}
+.rentals-topbar{background:#1a1a2e;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1}
+.rentals-topbar h2{font-size:15px;font-weight:600}
+.back-btn{background:rgba(255,255,255,.15);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer}
+.back-btn:hover{background:rgba(255,255,255,.25)}
+.rentals-main{padding:16px 24px 40px}
+.date-section{margin-bottom:20px}
+.date-hdr{font-size:15px;font-weight:700;color:#1a1a2e;padding:10px 0 8px;border-bottom:2px solid #1a1a2e;margin-bottom:10px}
+.date-meta{font-size:13px;font-weight:400;color:#888;margin-left:8px}
+.shop-block{background:#fff;border:1px solid #e5e5e5;border-radius:10px;margin-bottom:10px;overflow:hidden}
+.shop-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#fafafa;border-bottom:1px solid #f0f0f0}
+.shop-name{font-size:13px;font-weight:600;color:#1a1a2e}
+.shop-meta-sm{font-size:12px;color:#888}
+</style>
+</head>
+<body>
+
+<div id="spinner"><div class="spin"></div><div class="spin-txt">Loading report...</div></div>
+
+<!-- Rentals overlay -->
+<div id="rentals-overlay">
+  <div class="rentals-topbar">
+    <h2 id="rentals-title">Rentals</h2>
+    <button class="back-btn" onclick="closeRentals()">&#8592; Back</button>
+  </div>
+  <div class="rentals-main" id="rentals-content"></div>
+</div>
+
+<div class="topbar">
+  <h1>EasyDrop &mdash; Reporting Dashboard &mdash; All Shops</h1>
+  <span class="meta" id="top-meta">Loading...</span>
+</div>
+
+<div class="ctrl">
+  <label>From:</label><input type="date" id="df">
+  <span style="color:#ccc">&rarr;</span>
+  <label>To:</label><input type="date" id="dt">
+  <label>Shop:</label>
+  <select id="shop">
+    <option value="All">All Shops</option>
+    <option value="Tigne Shop">Tigne Shop</option>
+    <option value="High Street Shop">High Street Shop</option>
+    <option value="Valletta Shop">Valletta Shop</option>
+    <option value="Qawra Shop">Qawra Shop</option>
+  </select>
+  <button onclick="loadReport()">Load</button>
+  <button onclick="loadToday()">Today</button>
+  <button onclick="loadMonth()">This Month</button>
+  <button class="btn-green" onclick="showRentals()">View Rentals</button>
+</div>
+
+<div class="main" id="main-content">
+  <div style="text-align:center;padding:60px;color:#888;">Loading dashboard...</div>
+</div>
+
+<script>
+// ── CONFIG — replace with your Apps Script URL ────────────────
+var API_URL = "https://script.google.com/macros/s/AKfycbwNp4wjGDQaq7PSStHUh90CEyh5D6Se7qQTx0OBDtw7QcYkui8d5gMSZSlkXRpDG9OAfg/exec";
+
+var SHOP_COLORS = {
+  "Tigne Shop":       "#6366f1",
+  "High Street Shop": "#0ea5e9",
+  "Valletta Shop":    "#10b981",
+  "Qawra Shop":       "#f59e0b"
+};
+
+var currentData = null;
+var revenueChart = null;
+var salesChart   = null;
+
+// ── Date helpers ─────────────────────────────────────────────
+function todayStr() {
+  var n=new Date();
+  return String(n.getDate()).padStart(2,"0")+"."+String(n.getMonth()+1).padStart(2,"0")+"."+n.getFullYear();
+}
+function monthStartStr() {
+  var n=new Date();
+  return "01."+String(n.getMonth()+1).padStart(2,"0")+"."+n.getFullYear();
+}
+function daysAgoStr(days) {
+  var d=new Date(); d.setDate(d.getDate()-days);
+  return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+d.getFullYear();
+}
+function toInputVal(dstr) {
+  var p=dstr.split("."); return p.length===3?p[2]+"-"+p[1]+"-"+p[0]:"";
+}
+function fromInputVal(v) {
+  var p=v.split("-"); return p[2]+"."+p[1]+"."+p[0];
+}
+
+// ── Init ─────────────────────────────────────────────────────
+window.onload = function() {
+  var defFrom = daysAgoStr(30);
+  var defTo   = todayStr();
+  document.getElementById("df").value = toInputVal(defFrom);
+  document.getElementById("dt").value = toInputVal(defTo);
+  loadReport();
+};
+
+// ── Load report ──────────────────────────────────────────────
+function loadReport() {
+  var f = document.getElementById("df").value;
+  var t = document.getElementById("dt").value;
+  var s = document.getElementById("shop").value;
+  if (!f || !t) return;
+  fetchData(fromInputVal(f), fromInputVal(t), s);
+}
+
+function loadToday() {
+  var d = todayStr();
+  document.getElementById("df").value = toInputVal(d);
+  document.getElementById("dt").value = toInputVal(d);
+  fetchData(d, d, document.getElementById("shop").value);
+}
+
+function loadMonth() {
+  var f = monthStartStr(), t = todayStr();
+  document.getElementById("df").value = toInputVal(f);
+  document.getElementById("dt").value = toInputVal(t);
+  fetchData(f, t, document.getElementById("shop").value);
+}
+
+function fetchData(dateFrom, dateTo, shop) {
+  showSpinner();
+  var url = API_URL + "?format=json&dateFrom=" + dateFrom + "&dateTo=" + dateTo + "&shop=" + encodeURIComponent(shop);
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      currentData = data;
+      hideSpinner();
+      renderDashboard(data, dateFrom, dateTo, shop);
+    })
+    .catch(function(err) {
+      hideSpinner();
+      document.getElementById("main-content").innerHTML =
+        '<div class="error-box">Error loading data: ' + err.message + '<br><small>Check that your API_URL is correct and the Apps Script is deployed with "Anyone" access.</small></div>';
+    });
+}
+
+// ── Render dashboard ─────────────────────────────────────────
+function renderDashboard(data, dateFrom, dateTo, shop) {
+  document.getElementById("top-meta").textContent = data.rows.length + " records | " + dateFrom + " — " + dateTo;
+
+  var html = "";
+
+  // Metrics
+  var promoRate = data.totalSales > 0 ? (data.promoCount / data.totalSales * 100).toFixed(0) : 0;
+  html += '<div class="metrics">';
+  html += metric("Total Revenue", "€" + data.totalRevenue.toFixed(2));
+  html += metric("Total Sales",   data.totalSales);
+  html += metric("Avg per Sale",  "€" + data.avgRevenue.toFixed(2));
+  html += metric("Promo Used",    data.promoCount + " (" + promoRate + "%)");
+  html += metric("Days in Range", data.dates.length);
+  html += '</div>';
+
+  // Revenue share by shop
+  html += '<div class="chart-card"><h3>Revenue Share by Shop</h3><div class="shop-bars">';
+  var shops = Object.keys(data.revenueByShop);
+  shops.forEach(function(s) {
+    var rev = data.revenueByShop[s] || 0;
+    var cnt = data.salesByShop[s]   || 0;
+    var pct = data.totalRevenue > 0 ? (rev / data.totalRevenue * 100).toFixed(1) : 0;
+    var col = SHOP_COLORS[s] || "#6366f1";
+    html += '<div class="shop-bar-item">'
+      + '<div class="shop-bar-label">' + s + '</div>'
+      + '<div class="shop-bar-track"><div class="shop-bar-fill" style="width:' + pct + '%;background:' + col + '"></div></div>'
+      + '<div class="shop-bar-value">€' + rev.toFixed(2) + ' (' + cnt + ' sales)</div>'
+      + '</div>';
+  });
+  html += '</div></div>';
+
+  document.getElementById("main-content").innerHTML = html;
+
+  // Charts
+  renderCharts(data);
+
+  // Transactions table
+  renderTable(data);
+}
+
+function metric(label, value) {
+  return '<div class="metric"><div class="lbl">' + label + '</div><div class="val">' + value + '</div></div>';
+}
+
+function renderCharts(data) {
+  var main = document.getElementById("main-content");
+
+  // Revenue by month chart
+  var rc = document.createElement("div");
+  rc.className = "chart-card";
+  rc.innerHTML = '<h3>Revenue by Shop — By Month</h3><canvas id="revenueChart" height="80"></canvas>';
+  main.appendChild(rc);
+
+  // Sales by day chart
+  var sc = document.createElement("div");
+  sc.className = "chart-card";
+  sc.innerHTML = '<h3>Sales Count by Day</h3><canvas id="salesChart" height="60"></canvas>';
+  main.appendChild(sc);
+
+  // Destroy old charts if re-rendering
+  if (revenueChart) { revenueChart.destroy(); revenueChart = null; }
+  if (salesChart)   { salesChart.destroy();   salesChart   = null; }
+
+  var shopKeys = Object.keys(data.shopSeries);
+  var datasets = shopKeys.map(function(s) {
+    return {
+      label: s,
+      data:  data.shopSeries[s] || [],
+      backgroundColor: (SHOP_COLORS[s] || "#6366f1") + "99",
+      borderColor:      SHOP_COLORS[s] || "#6366f1",
+      borderWidth: 2
+    };
+  });
+
+  revenueChart = new Chart(document.getElementById("revenueChart"), {
+    type: "bar",
+    data: { labels: data.monthLabels || [], datasets: datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: "bottom" } },
+      scales: { y: { beginAtZero: true, ticks: { callback: function(v){ return "€"+v.toFixed(0); } } } }
+    }
+  });
+
+  salesChart = new Chart(document.getElementById("salesChart"), {
+    type: "bar",
+    data: {
+      labels: data.dates || [],
+      datasets: [{ label: "Sales", data: data.salesCounts || [], backgroundColor: "#6366f133", borderColor: "#6366f1", borderWidth: 2 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+}
+
+function renderTable(data) {
+  var main = document.getElementById("main-content");
+
+  // Group by date
+  var byDate = {}, dateOrder = [];
+  data.rows.forEach(function(r) {
+    if (!byDate[r.date]) { byDate[r.date] = {}; dateOrder.push(r.date); }
+    if (!byDate[r.date][r.shop]) byDate[r.date][r.shop] = [];
+    byDate[r.date][r.shop].push(r);
+  });
+  dateOrder = dateOrder.filter(function(d,i){ return dateOrder.indexOf(d)===i; });
+  dateOrder.reverse(); // newest first
+
+  var tbody = "";
+  dateOrder.forEach(function(d) {
+    var dayTotal = 0, dayCount = 0;
+    var shopBlocks = "";
+    var allShops = Object.keys(byDate[d]);
+    allShops.forEach(function(shop) {
+      var rows = byDate[d][shop] || [];
+      var shopTotal = rows.reduce(function(s,r){ return s+r.price; },0);
+      dayTotal += shopTotal; dayCount += rows.length;
+      shopBlocks += '<tr class="shop-group-hdr"><td colspan="10">' + shop
+        + ' <span class="shop-group-meta">' + rows.length + ' sale' + (rows.length!==1?'s':'') + ' &nbsp;&middot;&nbsp; €' + shopTotal.toFixed(2) + '</span></td></tr>';
+      rows.slice().reverse().forEach(function(r, i) {
+        var tc = r.txType==="Rent"?"rent":r.txType==="Overtime"?"over":"ext";
+        shopBlocks += '<tr>'
+          + '<td class="c muted">'+(i+1)+'</td>'
+          + '<td class="c">'+r.time+'</td>'
+          + '<td class="mono">'+r.invoice+'</td>'
+          + '<td class="c">'+r.locker+'</td>'
+          + '<td class="c">'+r.rentStart+'</td>'
+          + '<td class="c">'+r.rentEnd+'</td>'
+          + '<td class="c '+(r.promo?'promo':'muted')+'">'+(r.promo||'-')+'</td>'
+          + '<td class="r amt">€'+r.price.toFixed(2)+'</td>'
+          + '<td class="c">'+r.paySystem+'</td>'
+          + '<td class="c"><span class="type-'+tc+'">'+r.txType+'</span></td>'
+          + '</tr>';
+      });
+      shopBlocks += '<tr class="shop-subtotal"><td colspan="9" class="r tfl">Shop total</td><td class="r tfa">€'+shopTotal.toFixed(2)+'</td></tr>';
+    });
+    tbody += '<tr class="date-group-hdr"><td colspan="10">'+d
+      +' <span class="date-group-meta">'+dayCount+' sale'+(dayCount!==1?'s':'')+' &nbsp;&middot;&nbsp; €'+dayTotal.toFixed(2)+'</span></td></tr>'
+      + shopBlocks
+      + '<tr class="day-total-row"><td colspan="9" class="r tfl">Day total</td><td class="r tfa">€'+dayTotal.toFixed(2)+'</td></tr>';
+  });
+
+  var div = document.createElement("div");
+  div.className = "tbl-card";
+  div.innerHTML = '<div class="tbl-hdr"><h3>All Transactions (' + data.rows.length + ')</h3>'
+    + '<button class="btn-green" onclick="showRentals()" style="padding:6px 14px;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;">View Rentals</button></div>'
+    + '<div class="tbl-wrap"><table>'
+    + '<thead><tr><th class="c">#</th><th class="c">Time</th><th>Invoice</th>'
+    + '<th class="c">Locker</th><th class="c">Start</th><th class="c">End</th>'
+    + '<th class="c">Promo</th><th class="r">Price</th><th class="c">Payment</th><th class="c">Type</th></tr></thead>'
+    + '<tbody>' + tbody + '</tbody>'
+    + '</table></div>';
+  main.appendChild(div);
+}
+
+// ── View Rentals overlay ──────────────────────────────────────
+function showRentals() {
+  if (!currentData) return;
+  var data = currentData;
+
+  var byDate = {}, dateOrder = [];
+  data.rows.forEach(function(r) {
+    if (!byDate[r.date]) { byDate[r.date] = {}; dateOrder.push(r.date); }
+    if (!byDate[r.date][r.shop]) byDate[r.date][r.shop] = [];
+    byDate[r.date][r.shop].push(r);
+  });
+  dateOrder = dateOrder.filter(function(d,i){ return dateOrder.indexOf(d)===i; });
+  dateOrder.reverse();
+
+  var html = "";
+  dateOrder.forEach(function(d) {
+    var dayTotal = 0, dayCount = 0;
+    var shopHtml = "";
+    Object.keys(byDate[d]).forEach(function(shop) {
+      var rows = byDate[d][shop];
+      var shopTotal = rows.reduce(function(s,r){ return s+r.price; },0);
+      dayTotal += shopTotal; dayCount += rows.length;
+      var trs = rows.slice().reverse().map(function(r,i) {
+        var tc = r.txType==="Rent"?"rent":r.txType==="Overtime"?"over":"ext";
+        return '<tr>'
+          + '<td class="c muted">'+(i+1)+'</td>'
+          + '<td class="c">'+r.time+'</td>'
+          + '<td class="mono">'+r.invoice+'</td>'
+          + '<td class="c">'+r.locker+'</td>'
+          + '<td class="c">'+r.rentStart+'</td>'
+          + '<td class="c">'+r.rentEnd+'</td>'
+          + '<td class="c '+(r.promo?'promo':'muted')+'">'+(r.promo||'-')+'</td>'
+          + '<td class="r amt">€'+r.price.toFixed(2)+'</td>'
+          + '<td class="c"><span class="type-'+tc+'">'+r.txType+'</span></td>'
+          + '</tr>';
+      }).join("");
+      shopHtml += '<div class="shop-block">'
+        + '<div class="shop-hdr"><span class="shop-name">'+shop+'</span>'
+        + '<span class="shop-meta-sm">'+rows.length+' sale'+(rows.length!==1?'s':'')+' &middot; €'+shopTotal.toFixed(2)+'</span></div>'
+        + '<div class="tbl-wrap"><table>'
+        + '<thead><tr><th class="c">#</th><th class="c">Time</th><th>Invoice</th>'
+        + '<th class="c">Locker</th><th class="c">Start</th><th class="c">End</th>'
+        + '<th class="c">Promo</th><th class="r">Price</th><th class="c">Type</th></tr></thead>'
+        + '<tbody>'+trs+'</tbody>'
+        + '<tfoot><tr><td colspan="8" class="r tfl">Shop total</td><td class="r tfa">€'+shopTotal.toFixed(2)+'</td></tr></tfoot>'
+        + '</table></div></div>';
+    });
+    html += '<div class="date-section">'
+      + '<div class="date-hdr">'+d+' <span class="date-meta">'+dayCount+' sale'+(dayCount!==1?'s':'')+' &middot; €'+dayTotal.toFixed(2)+'</span></div>'
+      + shopHtml + '</div>';
+  });
+
+  document.getElementById("rentals-title").textContent = "Rentals — " + data.rows.length + " records | €" + data.totalRevenue.toFixed(2);
+  document.getElementById("rentals-content").innerHTML = html;
+  document.getElementById("rentals-overlay").classList.add("active");
+}
+
+function closeRentals() {
+  document.getElementById("rentals-overlay").classList.remove("active");
+}
+
+// ── Spinner ───────────────────────────────────────────────────
+function showSpinner() { document.getElementById("spinner").classList.add("active"); }
+function hideSpinner() { document.getElementById("spinner").classList.remove("active"); }
+</script>
+</body>
+</html>
