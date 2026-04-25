@@ -175,7 +175,7 @@ function fromInputVal(v) {
 
 // ── Init ─────────────────────────────────────────────────────
 window.onload = function() {
-  var defFrom = daysAgoStr(30);
+  var defFrom =  todayStr();
   var defTo   = todayStr();
   document.getElementById("df").value = toInputVal(defFrom);
   document.getElementById("dt").value = toInputVal(defTo);
@@ -223,26 +223,17 @@ function fetchData(dateFrom, dateTo, shop) {
 }
 
 // ── Toggle chart expand ──────────────────────────────────────
-function toggleChart(btn) {
-  var card = btn.closest('.chart-card');
-  var canvas = card.querySelector('canvas');
-  var expanded = card.classList.toggle('expanded');
-  btn.textContent = expanded ? 'Collapse' : 'Expand';
-  // Directly set canvas height and force Chart.js to redraw
-  var wrap = card.querySelector('.chart-wrap');
-  if (wrap) {
-    wrap.style.height = expanded ? '320px' : '160px';
-    // Find and resize the Chart.js instance attached to this canvas
-    var chartId = canvas.id;
-    if (chartId === 'revenueChart' && revenueChart) {
-      revenueChart.resize();
-      revenueChart.update();
-    }
-    if (chartId === 'salesChart' && salesChart) {
-      salesChart.resize();
-      salesChart.update();
-    }
-  }
+function toggleChart(chartId, btnId) {
+  var wrap = document.getElementById('wrap' + (chartId === 'revenueChart' ? 'Revenue' : 'Sales'));
+  var btn  = document.getElementById(btnId);
+  var chart = chartId === 'revenueChart' ? revenueChart : salesChart;
+  if (!wrap) return;
+  var expanded = wrap.getAttribute('data-expanded') === 'true';
+  expanded = !expanded;
+  wrap.setAttribute('data-expanded', expanded);
+  wrap.style.height = expanded ? '320px' : '160px';
+  if (btn) btn.textContent = expanded ? 'Collapse' : 'Expand';
+  if (chart) { chart.resize(); chart.update(); }
 }
 
 // ── Render dashboard ─────────────────────────────────────────
@@ -296,13 +287,13 @@ function renderCharts(data) {
   // Revenue by month chart
   var rc = document.createElement("div");
   rc.className = "chart-card";
-  rc.innerHTML = '<h3>Revenue by Shop — By Month <button class="expand-btn" onclick="toggleChart(this)">Expand</button></h3><canvas id="revenueChart" height="80"></canvas>';
+  rc.innerHTML = '<h3>Revenue by Shop — By Month <button class="expand-btn" id="expandRevenue" onclick="toggleChart(\'revenueChart\',\'expandRevenue\')">Expand</button></h3><div class="chart-wrap" id="wrapRevenue" style="position:relative;height:160px;"><canvas id="revenueChart"></canvas></div>';
   main.appendChild(rc);
 
   // Sales by day chart
   var sc = document.createElement("div");
   sc.className = "chart-card";
-  sc.innerHTML = '<h3>Sales Count by Day <button class="expand-btn" onclick="toggleChart(this)">Expand</button></h3><canvas id="salesChart" height="60"></canvas>';
+  sc.innerHTML = '<h3>Sales Count by Day <button class="expand-btn" id="expandSales" onclick="toggleChart(\'salesChart\',\'expandSales\')">Expand</button></h3><div class="chart-wrap" id="wrapSales" style="position:relative;height:160px;"><canvas id="salesChart"></canvas></div>';
   main.appendChild(sc);
 
   // Destroy old charts if re-rendering
