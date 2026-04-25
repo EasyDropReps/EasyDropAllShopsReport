@@ -158,7 +158,7 @@ function fromInputVal(v) {
 
 // ── Init ─────────────────────────────────────────────────────
 window.onload = function() {
-  var defFrom = daysAgoStr(30);
+  var defFrom = todayStr();
   var defTo   = todayStr();
   document.getElementById("df").value = toInputVal(defFrom);
   document.getElementById("dt").value = toInputVal(defTo);
