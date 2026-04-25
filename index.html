@@ -29,6 +29,7 @@ a{color:inherit}
 @media(max-width:900px){.charts-grid{grid-template-columns:1fr}}
 @media(max-width:600px){
   .chart-card canvas{max-height:160px!important;}
+  .chart-card.expanded canvas{max-height:320px!important;}
   .chart-card{padding:12px;}
   .chart-card h3{font-size:11px;margin-bottom:10px;}
   .metrics{gap:8px;}
@@ -41,6 +42,8 @@ a{color:inherit}
   .ctrl button{font-size:12px;padding:5px 10px;}
   .main{padding:10px 12px 30px;}
 }
+.expand-btn{display:none;background:none;border:none;color:#6366f1;font-size:12px;cursor:pointer;padding:0;margin-left:8px;text-decoration:underline;}
+@media(max-width:600px){.expand-btn{display:inline;}}
 .shop-bars{padding:4px 0}
 .shop-bar-item{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:13px}
 .shop-bar-label{width:140px;flex-shrink:0;color:#555}
@@ -219,6 +222,20 @@ function fetchData(dateFrom, dateTo, shop) {
     });
 }
 
+// ── Toggle chart expand ──────────────────────────────────────
+function toggleChart(btn) {
+  var card = btn.closest('.chart-card');
+  var expanded = card.classList.toggle('expanded');
+  btn.textContent = expanded ? 'Collapse' : 'Expand';
+  // Force chart resize
+  var canvas = card.querySelector('canvas');
+  if (canvas && canvas._chart) canvas._chart.resize();
+  // Also try Chart.js v4 way
+  Chart.instances && Object.values(Chart.instances).forEach(function(c){
+    if(c.canvas === canvas) c.resize();
+  });
+}
+
 // ── Render dashboard ─────────────────────────────────────────
 function renderDashboard(data, dateFrom, dateTo, shop) {
   document.getElementById("top-meta").textContent = data.rows.length + " records | " + dateFrom + " — " + dateTo;
@@ -270,13 +287,13 @@ function renderCharts(data) {
   // Revenue by month chart
   var rc = document.createElement("div");
   rc.className = "chart-card";
-  rc.innerHTML = '<h3>Revenue by Shop — By Month</h3><canvas id="revenueChart" height="80"></canvas>';
+  rc.innerHTML = '<h3>Revenue by Shop — By Month <button class="expand-btn" onclick="toggleChart(this)">Expand</button></h3><canvas id="revenueChart" height="80"></canvas>';
   main.appendChild(rc);
 
   // Sales by day chart
   var sc = document.createElement("div");
   sc.className = "chart-card";
-  sc.innerHTML = '<h3>Sales Count by Day</h3><canvas id="salesChart" height="60"></canvas>';
+  sc.innerHTML = '<h3>Sales Count by Day <button class="expand-btn" onclick="toggleChart(this)">Expand</button></h3><canvas id="salesChart" height="60"></canvas>';
   main.appendChild(sc);
 
   // Destroy old charts if re-rendering
