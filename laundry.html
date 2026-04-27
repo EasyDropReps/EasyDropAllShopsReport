@@ -76,8 +76,7 @@ tfoot td{padding:10px 20px;border-top:2px solid #e5e5e5;font-weight:600;backgrou
 
 <script>
 // ── CONFIG — replace with your Apps Script deployment ID ─────
-var API_URL = "https://script.google.com/macros/s/AKfycbwNp4wjGDQaq7PSStHUh90CEyh5D6Se7qQTx0OBDtw7QcYkui8d5gMSZSlkXRpDG9OAfg/exec";
-  
+var API_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
 
 var MONTH_NAMES = ["January","February","March","April","May","June",
                    "July","August","September","October","November","December"];
@@ -140,7 +139,8 @@ function loadReport() {
 
 function fetchData(dateFrom, dateTo) {
   showSpinner();
-  var url = API_URL + "?format=json&dateFrom=" + dateFrom + "&dateTo=" + dateTo + "&shop=All";
+  var url = API_URL + "?format=json&dateFrom=" + encodeURIComponent(dateFrom) + "&dateTo=" + encodeURIComponent(dateTo) + "&shop=All";
+  console.log("Fetching:", url);
   fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -155,7 +155,7 @@ function fetchData(dateFrom, dateTo) {
     .catch(function(err) {
       hideSpinner();
       document.getElementById("main-content").innerHTML =
-        '<div class="error-box">Error: ' + err.message + '</div>';
+        '<div class="error-box">Error: ' + err.message + '<br><small>URL attempted: ' + url + '</small></div>';
     });
 }
 
