@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EasyDrop Laundry Sales</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;background:#f5f5f5;color:#1a1a1a}
+.topbar{background:#7c3aed;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.topbar h1{font-size:16px;font-weight:600}
+.topbar .meta{font-size:12px;opacity:.8}
+.back-btn{background:rgba(255,255,255,.2);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;text-decoration:none}
+.ctrl{background:#fff;border-bottom:1px solid #e5e5e5;padding:12px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ctrl label{font-size:13px;color:#555}
+.ctrl select{padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px}
+.ctrl button{padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer}
+.ctrl button:hover{opacity:.85}
+.ctrl button.sec{background:#1a1a2e}
+.main{padding:16px 24px 40px}
+.metrics{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.metric{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:14px 20px;min-width:130px;flex:1}
+.metric .lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.metric .val{font-size:22px;font-weight:600;color:#1a1a2e}
+.chart-card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:20px;margin-bottom:16px}
+.chart-card h3{font-size:12px;font-weight:600;color:#1a1a2e;margin-bottom:16px;text-transform:uppercase;letter-spacing:.04em}
+.tbl-card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;overflow:hidden;margin-bottom:16px}
+.tbl-hdr{padding:14px 20px;border-bottom:1px solid #f0f0f0;background:#fafafa}
+.tbl-hdr h3{font-size:14px;font-weight:600;color:#1a1a2e}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{padding:10px 20px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;color:#888;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+tbody tr:hover{background:#fafafa}
+tbody td{padding:10px 20px;border-bottom:1px solid #f7f7f7;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tfoot td{padding:10px 20px;border-top:2px solid #e5e5e5;font-weight:600;background:#fafafa}
+.r{text-align:right}
+.error-box{background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:20px;color:#dc2626;margin:20px 0}
+#spinner{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(124,58,237,0.7);z-index:9999;align-items:center;justify-content:center;flex-direction:column}
+#spinner.active{display:flex}
+.spin{width:48px;height:48px;border:4px solid rgba(255,255,255,0.2);border-top:4px solid #fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-txt{color:#fff;font-size:14px;margin-top:16px;opacity:.8}
+</style>
+</head>
+<body>
+
+<div id="spinner"><div class="spin"></div><div class="spin-txt">Loading...</div></div>
+
+<div class="topbar">
+  <h1>Laundry Sales</h1>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="meta" id="top-meta"></span>
+    <a href="javascript:history.back()" class="back-btn">&#8592; Back</a>
+  </div>
+</div>
+
+<div class="ctrl">
+  <label>From:</label>
+  <select id="dfm"></select>
+  <select id="dfy"></select>
+  <span style="color:#ccc">&rarr;</span>
+  <label>To:</label>
+  <select id="dtm"></select>
+  <select id="dty"></select>
+  <button onclick="loadReport()">Load</button>
+  <button onclick="loadThisMonth()">This Month</button>
+  <button onclick="loadLastMonth()">Last Month</button>
+  <button onclick="loadThisQuarter()">This Quarter</button>
+  <button onclick="loadThisYear()">This Year</button>
+</div>
+
+<div class="main" id="main-content">
+  <div style="text-align:center;padding:60px;color:#888;">Loading...</div>
+</div>
+
+<script>
+// ── CONFIG — replace with your Apps Script deployment ID ─────
+var API_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
+
+var MONTH_NAMES = ["January","February","March","April","May","June",
+                   "July","August","September","October","November","December"];
+var laundryChart = null;
+
+// ── Init dropdowns ────────────────────────────────────────────
+function initDropdowns() {
+  var now = new Date();
+  var curM = now.getMonth();
+  var curY = now.getFullYear();
+  ["dfm","dtm"].forEach(function(id, idx) {
+    var sel = document.getElementById(id);
+    MONTH_NAMES.forEach(function(m,i) {
+      var opt = document.createElement("option");
+      opt.value = i; opt.textContent = m;
+      if (i === curM) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  });
+  ["dfy","dty"].forEach(function(id) {
+    var sel = document.getElementById(id);
+    for (var y = 2024; y <= curY+1; y++) {
+      var opt = document.createElement("option");
+      opt.value = y; opt.textContent = y;
+      if (y === curY) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+function getRange() {
+  var fm = parseInt(document.getElementById("dfm").value);
+  var fy = parseInt(document.getElementById("dfy").value);
+  var tm = parseInt(document.getElementById("dtm").value);
+  var ty = parseInt(document.getElementById("dty").value);
+  var df = "01." + String(fm+1).padStart(2,"0") + "." + fy;
+  var lastDay = new Date(ty, tm+1, 0).getDate();
+  var dt = String(lastDay).padStart(2,"0") + "." + String(tm+1).padStart(2,"0") + "." + ty;
+  return { df: df, dt: dt };
+}
+
+function setDropdowns(fm, fy, tm, ty) {
+  document.getElementById("dfm").value = fm;
+  document.getElementById("dfy").value = fy;
+  document.getElementById("dtm").value = tm;
+  document.getElementById("dty").value = ty;
+}
+
+// ── Quick filter buttons ──────────────────────────────────────
+function loadThisMonth()    { var n=new Date(); setDropdowns(n.getMonth(),n.getFullYear(),n.getMonth(),n.getFullYear()); loadReport(); }
+function loadLastMonth()    { var n=new Date(),m=n.getMonth()-1,y=n.getFullYear(); if(m<0){m=11;y--;} setDropdowns(m,y,m,y); loadReport(); }
+function loadThisQuarter()  { var n=new Date(),m=n.getMonth(),y=n.getFullYear(),qs=Math.floor(m/3)*3; setDropdowns(qs,y,qs+2,y); loadReport(); }
+function loadThisYear()     { var y=new Date().getFullYear(); setDropdowns(0,y,11,y); loadReport(); }
+
+// ── Load report ───────────────────────────────────────────────
+function loadReport() {
+  var r = getRange();
+  fetchData(r.df, r.dt);
+}
+
+function fetchData(dateFrom, dateTo) {
+  showSpinner();
+  var url = API_URL + "?format=json&dateFrom=" + dateFrom + "&dateTo=" + dateTo + "&shop=All";
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      hideSpinner();
+      if (data.laundry) {
+        renderLaundry(data.laundry, dateFrom, dateTo);
+      } else {
+        document.getElementById("main-content").innerHTML =
+          '<div class="error-box">No laundry data in response. Check Apps Script deployment.</div>';
+      }
+    })
+    .catch(function(err) {
+      hideSpinner();
+      document.getElementById("main-content").innerHTML =
+        '<div class="error-box">Error: ' + err.message + '</div>';
+    });
+}
+
+// ── Render ────────────────────────────────────────────────────
+function renderLaundry(laundry, dateFrom, dateTo) {
+  var main = document.getElementById("main-content");
+  main.innerHTML = "";
+
+  document.getElementById("top-meta").textContent =
+    laundry.monthOrder.length + " months | " + dateFrom + " — " + dateTo;
+
+  if (!laundry.monthOrder || !laundry.monthOrder.length) {
+    main.innerHTML = '<p style="padding:20px;color:#888;">No laundry data for this period.</p>';
+    return;
+  }
+
+  // Metrics
+  var mDiv = document.createElement("div");
+  mDiv.className = "metrics";
+  mDiv.innerHTML =
+    metric("Total Sales",  "€" + laundry.grandTotal.toFixed(2)) +
+    metric("Our Portion",  "€" + laundry.grandPortion.toFixed(2), "#059669") +
+    metric("Months",       laundry.monthOrder.length);
+  main.appendChild(mDiv);
+
+  // Chart
+  var cDiv = document.createElement("div");
+  cDiv.className = "chart-card";
+  cDiv.innerHTML = '<h3>Monthly Revenue — Total vs Our Portion</h3>'
+    + '<div style="position:relative;height:250px;"><canvas id="laundryChart"></canvas></div>';
+  main.appendChild(cDiv);
+
+  // Table
+  var rows = laundry.monthOrder.map(function(m) {
+    var d = laundry.byMonth[m];
+    return '<tr>'
+      + '<td style="padding:10px 20px;border-bottom:1px solid #f7f7f7;font-weight:500;">' + m + '</td>'
+      + '<td style="padding:10px 20px;border-bottom:1px solid #f7f7f7;text-align:right;font-weight:600;">€' + d.totalSales.toFixed(2) + '</td>'
+      + '<td style="padding:10px 20px;border-bottom:1px solid #f7f7f7;text-align:right;font-weight:600;color:#059669;">€' + d.ourPortion.toFixed(2) + '</td>'
+      + '</tr>';
+  }).join("");
+
+  var tDiv = document.createElement("div");
+  tDiv.className = "tbl-card";
+  tDiv.innerHTML = '<div class="tbl-hdr"><h3>By Month</h3></div>'
+    + '<div style="overflow-x:auto;"><table>'
+    + '<thead><tr>'
+    + '<th>Month</th>'
+    + '<th class="r">Total Sales</th>'
+    + '<th class="r">Our Portion</th>'
+    + '</tr></thead>'
+    + '<tbody>' + rows + '</tbody>'
+    + '<tfoot><tr>'
+    + '<td style="padding:10px 20px;font-weight:600;">Total</td>'
+    + '<td style="padding:10px 20px;text-align:right;font-weight:600;">€' + laundry.grandTotal.toFixed(2) + '</td>'
+    + '<td style="padding:10px 20px;text-align:right;font-weight:700;color:#059669;">€' + laundry.grandPortion.toFixed(2) + '</td>'
+    + '</tr></tfoot>'
+    + '</table></div>';
+  main.appendChild(tDiv);
+
+  // Render chart
+  if (laundryChart) { laundryChart.destroy(); laundryChart = null; }
+  laundryChart = new Chart(document.getElementById("laundryChart"), {
+    type: "bar",
+    data: {
+      labels: laundry.monthOrder,
+      datasets: [
+        { label: "Total Sales",  data: laundry.monthOrder.map(function(m){ return laundry.byMonth[m].totalSales;  }), backgroundColor: "#7c3aed99", borderColor: "#7c3aed", borderWidth: 2 },
+        { label: "Our Portion",  data: laundry.monthOrder.map(function(m){ return laundry.byMonth[m].ourPortion;  }), backgroundColor: "#05996999", borderColor: "#059669", borderWidth: 2 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom" } },
+      scales: { y: { beginAtZero: true, ticks: { callback: function(v){ return "€"+v.toFixed(0); } } } }
+    }
+  });
+}
+
+function metric(label, value, color) {
+  return '<div class="metric"><div class="lbl">' + label + '</div>'
+    + '<div class="val"' + (color ? ' style="color:' + color + ';"' : '') + '>' + value + '</div></div>';
+}
+
+function showSpinner() { document.getElementById("spinner").classList.add("active"); }
+function hideSpinner() { document.getElementById("spinner").classList.remove("active"); }
+
+// ── Start ─────────────────────────────────────────────────────
+initDropdowns();
+loadThisMonth();
+</script>
+</body>
+</html>
