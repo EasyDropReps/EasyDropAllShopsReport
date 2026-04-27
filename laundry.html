@@ -76,7 +76,7 @@ tfoot td{padding:10px 20px;border-top:2px solid #e5e5e5;font-weight:600;backgrou
 
 <script>
 // ── CONFIG — replace with your Apps Script deployment ID ─────
-var API_URL = "https://script.google.com/macros/s/AKfycbwNp4wjGDQaq7PSStHUh90CEyh5D6Se7qQTx0OBDtw7QcYkui8d5gMSZSlkXRpDG9OAfg/exec";
+var API_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
 
 var MONTH_NAMES = ["January","February","March","April","May","June",
                    "July","August","September","October","November","December"];
@@ -184,7 +184,7 @@ function renderLaundry(laundry, dateFrom, dateTo) {
   // Chart
   var cDiv = document.createElement("div");
   cDiv.className = "chart-card";
-  cDiv.innerHTML = '<h3>Monthly Revenue — Total vs Our Portion</h3>'
+  cDiv.innerHTML = '<h3>Monthly Revenue — Total vs EasyDrop/ShortLets Portion</h3>'
     + '<div style="position:relative;height:250px;"><canvas id="laundryChart"></canvas></div>';
   main.appendChild(cDiv);
 
@@ -205,7 +205,7 @@ function renderLaundry(laundry, dateFrom, dateTo) {
     + '<thead><tr>'
     + '<th>Month</th>'
     + '<th class="r">Total Sales</th>'
-    + '<th class="r">Our Portion</th>'
+    + '<th class="r">EasyDrop/ShortLets Portion</th>'
     + '</tr></thead>'
     + '<tbody>' + rows + '</tbody>'
     + '<tfoot><tr>'
@@ -224,7 +224,7 @@ function renderLaundry(laundry, dateFrom, dateTo) {
       labels: laundry.monthOrder,
       datasets: [
         { label: "Total Sales",  data: laundry.monthOrder.map(function(m){ return laundry.byMonth[m].totalSales;  }), backgroundColor: "#7c3aed99", borderColor: "#7c3aed", borderWidth: 2 },
-        { label: "Our Portion",  data: laundry.monthOrder.map(function(m){ return laundry.byMonth[m].ourPortion;  }), backgroundColor: "#05996999", borderColor: "#059669", borderWidth: 2 }
+        { label: "EasyDrop/ShortLets Portion",  data: laundry.monthOrder.map(function(m){ return laundry.byMonth[m].ourPortion;  }), backgroundColor: "#05996999", borderColor: "#059669", borderWidth: 2 }
       ]
     },
     options: {
