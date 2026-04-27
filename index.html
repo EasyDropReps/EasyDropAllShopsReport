@@ -185,7 +185,7 @@ function fromInputVal(v) {
 
 // ── Init ─────────────────────────────────────────────────────
 window.onload = function() {
-  var defFrom = daysAgoStr(30);
+  var defFrom = todayStr();
   var defTo   = todayStr();
   document.getElementById("df").value = toInputVal(defFrom);
   document.getElementById("dt").value = toInputVal(defTo);
@@ -411,87 +411,8 @@ function renderTable(data) {
 var laundryChart = null;
 
 function showLaundry() {
-  // Open the Apps Script laundry page directly — it has month filters
-  var LAUNDRY_URL = "https://script.google.com/macros/s/AKfycbwNp4wjGDQaq7PSStHUh90CEyh5D6Se7qQTx0OBDtw7QcYkui8d5gMSZSlkXRpDG9OAfg/exec";
-  var n = new Date(), m = n.getMonth(), y = n.getFullYear();
-  var f = "01." + String(m+1).padStart(2,"0") + "." + y;
-  var lastDay = new Date(y, m+1, 0).getDate();
-  var t = String(lastDay).padStart(2,"0") + "." + String(m+1).padStart(2,"0") + "." + y;
-  var s = document.getElementById ? (document.getElementById("shop") ? document.getElementById("shop").value : "All") : "All";
-  window.open(LAUNDRY_URL + "?view=laundry&dateFrom=" + f + "&dateTo=" + t + "&shop=" + encodeURIComponent(s), "_blank");
-  return;
-  // Dead code below kept for reference
-  if (!currentData || !currentData.laundry) return;
-  var laundry = currentData.laundry;
-  var content = document.getElementById("laundry-content");
-
-  if (!laundry.monthOrder || !laundry.monthOrder.length) {
-    content.innerHTML = '<p style="padding:20px;color:#888;">No laundry data found.</p>';
-    document.getElementById("laundry-overlay").style.display = "block";
-    return;
-  }
-
-  // Summary cards
-  var html = '<div class="metrics" style="margin-bottom:16px;">';
-  html += '<div class="metric"><div class="lbl">Total Sales</div><div class="val">€' + laundry.grandTotal.toFixed(2) + '</div></div>';
-  html += '<div class="metric"><div class="lbl">Our Portion</div><div class="val" style="color:#059669;">€' + laundry.grandPortion.toFixed(2) + '</div></div>';
-  html += '<div class="metric"><div class="lbl">Months</div><div class="val">' + laundry.monthOrder.length + '</div></div>';
-  html += '</div>';
-
-  // Chart
-  html += '<div class="chart-card" style="margin-bottom:16px;">';
-  html += '<h3>Monthly Revenue — Total vs Our Portion</h3>';
-  html += '<div style="position:relative;height:220px;"><canvas id="laundryChart"></canvas></div>';
-  html += '</div>';
-
-  // Table
-  var tableRows = laundry.monthOrder.map(function(m) {
-    var d = laundry.byMonth[m];
-    return '<tr>'
-      + '<td style="padding:9px 16px;border-bottom:1px solid #f7f7f7;">' + m + '</td>'
-      + '<td style="padding:9px 16px;border-bottom:1px solid #f7f7f7;text-align:right;font-weight:600;">€' + d.totalSales.toFixed(2) + '</td>'
-      + '<td style="padding:9px 16px;border-bottom:1px solid #f7f7f7;text-align:right;font-weight:600;color:#059669;">€' + d.ourPortion.toFixed(2) + '</td>'
-      + '</tr>';
-  }).join("");
-
-  html += '<div class="tbl-card">'
-    + '<div class="tbl-hdr"><h3>By Month</h3></div>'
-    + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
-    + '<thead><tr>'
-    + '<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;color:#888;border-bottom:1px solid #f0f0f0;">Month</th>'
-    + '<th style="padding:10px 16px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;color:#888;border-bottom:1px solid #f0f0f0;">Total Sales</th>'
-    + '<th style="padding:10px 16px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;color:#888;border-bottom:1px solid #f0f0f0;">Our Portion</th>'
-    + '</tr></thead>'
-    + '<tbody>' + tableRows + '</tbody>'
-    + '<tfoot><tr>'
-    + '<td style="padding:10px 16px;border-top:2px solid #e5e5e5;font-weight:600;background:#fafafa;">Total</td>'
-    + '<td style="padding:10px 16px;border-top:2px solid #e5e5e5;font-weight:600;background:#fafafa;text-align:right;">€' + laundry.grandTotal.toFixed(2) + '</td>'
-    + '<td style="padding:10px 16px;border-top:2px solid #e5e5e5;font-weight:700;background:#fafafa;text-align:right;color:#059669;">€' + laundry.grandPortion.toFixed(2) + '</td>'
-    + '</tr></tfoot>'
-    + '</table></div></div>';
-
-  content.innerHTML = html;
-  document.getElementById("laundry-title").textContent = "Laundry Sales — " + laundry.monthOrder.length + " months";
-  document.getElementById("laundry-overlay").style.display = "block";
-
-  // Render chart after DOM is ready
-  if (laundryChart) { laundryChart.destroy(); laundryChart = null; }
-  laundryChart = new Chart(document.getElementById("laundryChart"), {
-    type: "bar",
-    data: {
-      labels: laundry.monthOrder,
-      datasets: [
-        { label: "Total Sales", data: laundry.monthOrder.map(function(m){ return laundry.byMonth[m].totalSales; }), backgroundColor: "#6366f199", borderColor: "#6366f1", borderWidth: 2 },
-        { label: "Our Portion", data: laundry.monthOrder.map(function(m){ return laundry.byMonth[m].ourPortion; }), backgroundColor: "#05996999", borderColor: "#059669", borderWidth: 2 }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: "bottom" } },
-      scales: { y: { beginAtZero: true, ticks: { callback: function(v){ return "€"+v.toFixed(0); } } } }
-    }
-  });
+  // Open standalone laundry dashboard
+  window.open("laundry.html", "_blank");
 }
 
 function closeLaundry() {
