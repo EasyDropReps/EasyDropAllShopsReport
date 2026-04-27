@@ -177,7 +177,7 @@ function renderLaundry(laundry, dateFrom, dateTo) {
   mDiv.className = "metrics";
   mDiv.innerHTML =
     metric("Total Sales",  "€" + laundry.grandTotal.toFixed(2)) +
-    metric("Our Portion",  "€" + laundry.grandPortion.toFixed(2), "#059669") +
+    metric("EasyDrop/ShortLets Portion",  "€" + laundry.grandPortion.toFixed(2), "#059669") +
     metric("Months",       laundry.monthOrder.length);
   main.appendChild(mDiv);
 
